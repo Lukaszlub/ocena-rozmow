@@ -44,6 +44,8 @@ def process_file(path: Path, cfg: AppConfig, db_conn) -> EvaluationResult | None
         if evidence.get(k):
             evidence_summary = evidence.get(k, "")
             break
+    if not evidence_summary:
+        evidence_summary = transcription.transcript[:200].strip()
 
     result = EvaluationResult(
         first_name=first_name,

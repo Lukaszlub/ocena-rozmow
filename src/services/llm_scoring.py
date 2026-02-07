@@ -20,6 +20,7 @@ Zwroc JSON:
   "evidence": { "Kryterium": "krotki cytat z transkrypcji" }
 }
 Jesli brak dowodu, evidence ustaw na pusty string.
+Evidence musi byc doslownym cytatem z transkrypcji (krotki fragment).
 """.strip()
 
 
