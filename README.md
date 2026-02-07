@@ -106,3 +106,23 @@ Funkcje:
 - paginacja historii
 - cytat wykrytego wulgaryzmu w tabeli
 
+## Instalator Windows (EXE)
+
+Wymagania:
+- Python 3.12+ (do zbudowania)
+- Inno Setup (do wygenerowania instalatora)
+
+Kroki:
+1. Zbuduj aplikacje:
+```powershell
+.\tools\build-scripts\build.ps1
+```
+2. Otworz Inno Setup i uruchom skrypt:
+```
+tools\installer\OcenaRozmow.iss
+```
+3. Instalator znajdziesz w:
+```
+dist\installer\OcenaRozmow-Setup.exe
+```
+

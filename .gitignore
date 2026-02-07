@@ -15,6 +15,11 @@ __pycache__/
 *.log
 logs/
 
+# Build artifacts
+dist/
+build/
+*.spec
+
 # OS
 .DS_Store
 Thumbs.db
