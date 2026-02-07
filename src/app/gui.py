@@ -26,6 +26,7 @@ class GuiApp(tk.Tk):
         self.geometry("1100x700")
 
         self._results: Dict[str, EvaluationResult] = {}
+        self._row_map: Dict[str, EvaluationResult] = {}
         self._page = 1
         self._page_size = 50
         self._name_filter = ""
@@ -181,11 +182,12 @@ class GuiApp(tk.Tk):
         if not selected:
             return
         item_id = selected[0]
-        key = self.tree.item(item_id, "values")[0]
-        if key not in self._results:
+        r = self._row_map.get(item_id)
+        if not r:
+            key = self.tree.item(item_id, "values")[0]
+            r = self._results.get(key)
+        if not r:
             return
-
-        r = self._results[key]
         self.details.delete("1.0", tk.END)
         self.details.insert(tk.END, "Oceny kategorii:\n")
         for k, v in r.score_breakdown.items():
@@ -211,6 +213,7 @@ class GuiApp(tk.Tk):
 
     def _load_from_db(self) -> None:
         self._results.clear()
+        self._row_map.clear()
         for item in self.tree.get_children():
             self.tree.delete(item)
 
@@ -227,6 +230,7 @@ class GuiApp(tk.Tk):
                 stars=str(r.stars),
                 profanity="TAK" if r.profanity_flag else "NIE",
                 excerpt=r.profanity_excerpt,
+                result=r,
             )
         self._update_summary()
         total = count_evaluations(self.db_conn, name_filter=self._name_filter)
@@ -251,6 +255,7 @@ class GuiApp(tk.Tk):
                     stars=str(result.stars),
                     profanity="TAK" if result.profanity_flag else "NIE",
                     excerpt=result.profanity_excerpt,
+                    result=result,
                 )
                 self._update_summary()
             elif kind == "error":
@@ -276,6 +281,7 @@ class GuiApp(tk.Tk):
         stars: str | None = None,
         profanity: str | None = None,
         excerpt: str | None = None,
+        result: EvaluationResult | None = None,
     ) -> None:
         tag = None
         if score:
@@ -305,21 +311,25 @@ class GuiApp(tk.Tk):
                     self.tree.item(item, values=new_values, tags=(tag,))
                 else:
                     self.tree.item(item, values=new_values)
+                if result:
+                    self._row_map[item] = result
                 return
 
         if tag:
-            self.tree.insert(
+            item_id = self.tree.insert(
                 "",
                 tk.END,
                 values=(filename, status or "", score or "", stars or "", profanity or "", excerpt or ""),
                 tags=(tag,),
             )
         else:
-            self.tree.insert(
+            item_id = self.tree.insert(
                 "",
                 tk.END,
                 values=(filename, status or "", score or "", stars or "", profanity or "", excerpt or ""),
             )
+        if result:
+            self._row_map[item_id] = result
 
     def _update_summary(self) -> None:
         if not self._results:
