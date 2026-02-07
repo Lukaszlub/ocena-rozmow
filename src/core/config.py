@@ -27,6 +27,7 @@ class AppConfig:
     transcription: Dict[str, str]
     scoring: Dict[str, str]
     watcher: Dict[str, str]
+    logging: Dict[str, str]
 
 
 def load_config(path: Path) -> AppConfig:
@@ -44,6 +45,7 @@ def load_config(path: Path) -> AppConfig:
         transcription=raw["transcription"],
         scoring=raw["scoring"],
         watcher=raw["watcher"],
+        logging=raw.get("logging", {}),
     )
 
 

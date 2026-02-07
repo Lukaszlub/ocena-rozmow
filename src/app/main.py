@@ -4,6 +4,7 @@ import argparse
 from pathlib import Path
 
 from src.core.config import load_config
+from src.core.logging_setup import setup_logging
 from src.pipelines.batch import run_batch
 from src.pipelines.watcher import run_watcher
 from src.services.db import init_db
@@ -16,6 +17,7 @@ def main() -> None:
     args = parser.parse_args()
 
     cfg = load_config(Path("config.yaml"))
+    setup_logging(cfg.logging)
     db_conn = init_db(cfg.db_path)
 
     if args.mode == "batch":

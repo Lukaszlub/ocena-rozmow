@@ -45,3 +45,10 @@ scoring:
 watcher:
   settle_time_sec: 2
   idle_sleep_sec: 1
+
+logging:
+  enabled: true
+  level: INFO
+  file_path: logs/app.log
+  max_bytes: 1048576
+  backup_count: 5
