@@ -22,8 +22,8 @@ class GuiApp(tk.Tk):
         super().__init__()
         self.cfg = cfg
         self.db_conn = db_conn
-        self.title("Ocena rozmow - GUI")
-        self.geometry("1100x700")
+        self.title("Ocena rozmow")
+        self.geometry("1180x760")
 
         self._results: Dict[str, EvaluationResult] = {}
         self._row_map: Dict[str, EvaluationResult] = {}
@@ -34,40 +34,83 @@ class GuiApp(tk.Tk):
         self._pending_files: List[str] = []
         self._queue: Queue = Queue()
 
+        self._setup_style()
         self._build_ui()
         self._load_from_db()
         self._poll_queue()
 
-    def _build_ui(self) -> None:
-        top = ttk.Frame(self)
-        top.pack(fill=tk.X, padx=10, pady=8)
+    def _setup_style(self) -> None:
+        style = ttk.Style()
+        try:
+            style.theme_use("clam")
+        except Exception:
+            pass
 
-        self.btn_select = ttk.Button(top, text="Wybierz pliki MP3", command=self._choose_files)
+        style.configure("App.TFrame", background="#F6F7FB")
+        style.configure("Card.TFrame", background="#FFFFFF")
+        style.configure("Toolbar.TFrame", background="#FFFFFF")
+        style.configure("Header.TLabel", background="#FFFFFF", font=("Segoe UI", 12, "bold"))
+        style.configure("Sub.TLabel", background="#F6F7FB", font=("Segoe UI", 10))
+        style.configure("TLabel", font=("Segoe UI", 10))
+        style.configure("TButton", font=("Segoe UI", 10), padding=(10, 6))
+        style.configure("Accent.TButton", font=("Segoe UI", 10, "bold"))
+
+        style.configure(
+            "Treeview",
+            font=("Segoe UI", 10),
+            rowheight=26,
+            background="#FFFFFF",
+            fieldbackground="#FFFFFF",
+        )
+        style.configure(
+            "Treeview.Heading",
+            font=("Segoe UI", 10, "bold"),
+            background="#EEF0F6",
+        )
+        style.map("Treeview.Heading", background=[("active", "#E2E6F0")])
+
+    def _build_ui(self) -> None:
+        root = ttk.Frame(self, style="App.TFrame")
+        root.pack(fill=tk.BOTH, expand=True)
+
+        header = ttk.Frame(root, style="Toolbar.TFrame")
+        header.pack(fill=tk.X, padx=16, pady=(12, 8))
+
+        ttk.Label(header, text="Ocena rozmow", style="Header.TLabel").pack(side=tk.LEFT)
+        ttk.Label(header, text="Automatyczna ocena jakosci", style="Sub.TLabel").pack(
+            side=tk.LEFT, padx=12
+        )
+
+        actions = ttk.Frame(root, style="Toolbar.TFrame")
+        actions.pack(fill=tk.X, padx=16, pady=(0, 10))
+
+        self.btn_select = ttk.Button(actions, text="Wybierz MP3", command=self._choose_files)
         self.btn_select.pack(side=tk.LEFT)
 
-        self.btn_start = ttk.Button(top, text="Start oceny", command=self._start_processing)
+        self.btn_start = ttk.Button(actions, text="Start oceny", style="Accent.TButton", command=self._start_processing)
         self.btn_start.pack(side=tk.LEFT, padx=8)
 
-        self.btn_export = ttk.Button(top, text="Eksportuj do Excela", command=self._export_excel)
+        self.btn_export = ttk.Button(actions, text="Eksportuj Excel", command=self._export_excel)
         self.btn_export.pack(side=tk.LEFT, padx=8)
 
-        self.btn_refresh = ttk.Button(top, text="Odswiez z bazy", command=self._load_from_db)
+        self.btn_refresh = ttk.Button(actions, text="Odswiez z bazy", command=self._load_from_db)
         self.btn_refresh.pack(side=tk.LEFT, padx=8)
 
-        self.btn_open_reports = ttk.Button(top, text="Otworz folder raportow", command=self._open_reports)
+        self.btn_open_reports = ttk.Button(actions, text="Folder raportow", command=self._open_reports)
         self.btn_open_reports.pack(side=tk.LEFT, padx=8)
 
-        self.btn_criteria = ttk.Button(top, text="Kryteria oceny", command=self._open_criteria_popup)
+        self.btn_criteria = ttk.Button(actions, text="Kryteria oceny", command=self._open_criteria_popup)
         self.btn_criteria.pack(side=tk.LEFT, padx=8)
 
-        self.status = ttk.Label(top, text="Gotowe")
-        self.status.pack(side=tk.LEFT, padx=12)
+        self.status = ttk.Label(actions, text="Gotowe", style="Sub.TLabel")
+        self.status.pack(side=tk.RIGHT)
 
-        mid = ttk.Frame(self)
-        mid.pack(fill=tk.BOTH, expand=True, padx=10, pady=8)
+        mid = ttk.Frame(root, style="App.TFrame")
+        mid.pack(fill=tk.BOTH, expand=True, padx=16, pady=(0, 12))
 
-        filter_bar = ttk.Frame(mid)
-        filter_bar.pack(fill=tk.X, pady=4)
+        filter_bar = ttk.Frame(mid, style="Card.TFrame")
+        filter_bar.pack(fill=tk.X, pady=(0, 8))
+        filter_bar.configure(padding=(10, 8))
         ttk.Label(filter_bar, text="Szukaj konsultanta:").pack(side=tk.LEFT)
         self.filter_var = tk.StringVar()
         self.filter_entry = ttk.Entry(filter_bar, textvariable=self.filter_var, width=30)
@@ -77,15 +120,19 @@ class GuiApp(tk.Tk):
         self.btn_clear_filter = ttk.Button(filter_bar, text="Wyczysc", command=self._clear_filter)
         self.btn_clear_filter.pack(side=tk.LEFT, padx=6)
 
+        table_card = ttk.Frame(mid, style="Card.TFrame")
+        table_card.pack(fill=tk.BOTH, expand=True)
+        table_card.configure(padding=(8, 8))
+
         columns = ("file", "status", "score", "stars", "profanity", "excerpt")
-        self.tree = ttk.Treeview(mid, columns=columns, show="headings", height=12)
+        self.tree = ttk.Treeview(table_card, columns=columns, show="headings", height=12)
         self.tree.heading("file", text="Plik")
         self.tree.heading("status", text="Status")
         self.tree.heading("score", text="Wynik %")
         self.tree.heading("stars", text="Gwiazdki")
         self.tree.heading("profanity", text="Wulgaryzmy")
         self.tree.heading("excerpt", text="Cytat")
-        self.tree.column("file", width=340)
+        self.tree.column("file", width=360)
         self.tree.column("status", width=120)
         self.tree.column("score", width=90, anchor=tk.CENTER)
         self.tree.column("stars", width=90, anchor=tk.CENTER)
@@ -98,15 +145,16 @@ class GuiApp(tk.Tk):
         self.tree.tag_configure("mid", background="#FFEB9C")
         self.tree.tag_configure("low", background="#FFC7CE")
 
-        scrollbar = ttk.Scrollbar(mid, orient=tk.VERTICAL, command=self.tree.yview)
+        scrollbar = ttk.Scrollbar(table_card, orient=tk.VERTICAL, command=self.tree.yview)
         self.tree.configure(yscroll=scrollbar.set)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
-        bottom = ttk.Frame(self)
-        bottom.pack(fill=tk.BOTH, expand=True, padx=10, pady=8)
+        bottom = ttk.Frame(root, style="App.TFrame")
+        bottom.pack(fill=tk.BOTH, expand=True, padx=16, pady=(0, 12))
 
-        pager = ttk.Frame(bottom)
+        pager = ttk.Frame(bottom, style="Card.TFrame")
         pager.pack(fill=tk.X)
+        pager.configure(padding=(10, 6))
         self.btn_prev = ttk.Button(pager, text="Poprzednia", command=self._prev_page)
         self.btn_prev.pack(side=tk.LEFT)
         self.btn_next = ttk.Button(pager, text="Nastepna", command=self._next_page)
@@ -114,25 +162,29 @@ class GuiApp(tk.Tk):
         self.page_label = ttk.Label(pager, text="Strona 1")
         self.page_label.pack(side=tk.LEFT, padx=10)
 
-        left = ttk.Frame(bottom)
-        left.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        left = ttk.Frame(bottom, style="Card.TFrame")
+        left.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, pady=(8, 0))
+        left.configure(padding=(10, 8))
 
         ttk.Label(left, text="Podsumowanie").pack(anchor=tk.W)
         self.summary = tk.Text(left, height=10, wrap=tk.WORD)
         self.summary.pack(fill=tk.BOTH, expand=True)
 
-        right = ttk.Frame(bottom)
-        right.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10)
+        right = ttk.Frame(bottom, style="Card.TFrame")
+        right.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10, pady=(8, 0))
+        right.configure(padding=(10, 8))
 
         ttk.Label(right, text="Szczegoly oceny").pack(anchor=tk.W)
         self.details = tk.Text(right, height=10, wrap=tk.WORD)
         self.details.pack(fill=tk.BOTH, expand=True)
 
-        note = ttk.Label(
-            self,
+        footer = ttk.Frame(root, style="App.TFrame")
+        footer.pack(fill=tk.X, padx=16, pady=(0, 10))
+        ttk.Label(
+            footer,
             text="Uwaga: wybrane pliki sa kopiowane do folderu incoming i tam przetwarzane.",
-        )
-        note.pack(side=tk.BOTTOM, pady=4)
+            style="Sub.TLabel",
+        ).pack(side=tk.LEFT)
 
     def _choose_files(self) -> None:
         paths = filedialog.askopenfilenames(
