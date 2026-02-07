@@ -1,0 +1,47 @@
+﻿input_dir: data/incoming
+invalid_dir: data/invalid
+processed_dir: data/processed
+reports_dir: reports
+
+db_path: data/evaluations.sqlite3
+use_excel_export: true
+
+weights:
+  Otwarcie: 0.10
+  Merytoryka: 0.30
+  Proces: 0.20
+  Jezyk: 0.15
+  Domkniecie: 0.10
+  Technika: 0.15
+
+profanity_list:
+  - idiota
+  - cholera
+  - kurwa
+  - debil
+
+score_thresholds:
+  five_star: 0.90
+  four_star: 0.75
+  three_star: 0.60
+
+transcription:
+  provider: openai
+  model: gpt-4o-mini-transcribe
+  language: pl
+  prompt: ""
+  min_confidence: 0.85
+
+scoring:
+  provider: lmstudio
+  base_url: http://172.18.192.1:1234/v1
+  model: bielik-1.5b-v3.0-instruct
+  temperature: 0.0
+  max_output_tokens: 400
+  max_transcript_chars: 20000
+  max_retries: 2
+  retry_sleep_sec: 1
+
+watcher:
+  settle_time_sec: 2
+  idle_sleep_sec: 1
