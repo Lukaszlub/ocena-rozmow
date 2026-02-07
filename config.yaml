@@ -26,11 +26,13 @@ score_thresholds:
   three_star: 0.60
 
 transcription:
-  provider: openai
-  model: gpt-4o-mini-transcribe
+  provider: faster_whisper
+  model: base
   language: pl
   prompt: ""
   min_confidence: 0.85
+  compute_type: int8
+  device: cpu
 
 scoring:
   provider: lmstudio

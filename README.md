@@ -57,6 +57,23 @@ Zmien w `config.yaml`:
 - Transkrypcja korzysta z OpenAI Audio API (modele `gpt-4o-mini-transcribe` / `whisper-1`).
 - Scoring korzysta z Responses API i Structured Outputs (JSON schema).
 - Dla lokalnego LLM (LM Studio) ustaw `scoring.provider: lmstudio` i `scoring.base_url`.
+- Dla lokalnej transkrypcji ustaw `transcription.provider: faster_whisper`.
+
+## Lokalna transkrypcja (faster-whisper)
+
+1. W `config.yaml` ustaw:
+```yaml
+transcription:
+  provider: faster_whisper
+  model: base
+  device: cpu
+  compute_type: int8
+```
+2. Zainstaluj zaleznosci:
+```powershell
+pip install faster-whisper
+```
+3. Uruchom batch lub GUI jak zwykle.
 
 ## LM Studio (lokalny LLM)
 
