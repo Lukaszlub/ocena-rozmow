@@ -7,14 +7,32 @@ Minimalny projekt startowy (MVP) do automatycznej oceny rozmow MP3:
 - wykrywanie wulgaryzmow
 - zapis do bazy (SQLite) + opcjonalny eksport do Excela
 
-## Szybki start
+## Instalacja krok po kroku (Windows)
 
+1. Zainstaluj Python 3.12+ (najlepiej z python.org).
+2. Otworz PowerShell w katalogu projektu.
+3. (Opcjonalnie) Utworz srodowisko:
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
+```
+4. Zainstaluj zaleznosci:
+```powershell
 pip install -r requirements.txt
+```
+5. Ustaw klucz OpenAI (jezeli uzywasz transkrypcji OpenAI):
+```powershell
 $env:OPENAI_API_KEY = "twoj_klucz"
-python -m src.app.main --mode watch
+```
+6. Uruchom:
+```powershell
+python -m src.app.main --mode gui
+```
+
+## Szybki start
+
+```powershell
+python -m src.app.main --mode gui
 ```
 
 ## Struktura
