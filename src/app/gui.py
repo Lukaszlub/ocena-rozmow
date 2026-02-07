@@ -27,6 +27,7 @@ class GuiApp(tk.Tk):
 
         self._results: Dict[str, EvaluationResult] = {}
         self._row_map: Dict[str, EvaluationResult] = {}
+        self._row_errors: Dict[str, str] = {}
         self._page = 1
         self._page_size = 50
         self._name_filter = ""
@@ -185,6 +186,11 @@ class GuiApp(tk.Tk):
         if not selected:
             return
         item_id = selected[0]
+        if item_id in self._row_errors:
+            self.details.delete("1.0", tk.END)
+            self.details.insert(tk.END, "Blad przetwarzania:\n")
+            self.details.insert(tk.END, self._row_errors[item_id])
+            return
         r = self._row_map.get(item_id)
         if not r:
             key = self.tree.item(item_id, "values")[0]
@@ -221,6 +227,7 @@ class GuiApp(tk.Tk):
     def _load_from_db(self) -> None:
         self._results.clear()
         self._row_map.clear()
+        self._row_errors.clear()
         for item in self.tree.get_children():
             self.tree.delete(item)
 
@@ -236,7 +243,7 @@ class GuiApp(tk.Tk):
                 score=f"{r.score_total * 100:.2f}",
                 stars=str(r.stars),
                 profanity="TAK" if r.profanity_flag else "NIE",
-                excerpt=r.evidence_summary,
+                excerpt=(r.evidence_summary or r.transcript[:200].strip()),
                 result=r,
             )
         self._update_summary()
@@ -267,8 +274,12 @@ class GuiApp(tk.Tk):
                 self._update_summary()
             elif kind == "error":
                 filename, err = msg[1], msg[2]
-                self._upsert_row(filename, status="Blad")
-                self.status.config(text=f"Blad: {filename}: {err}")
+                item_id = self._upsert_row(filename, status="Blad", score="", stars="", profanity="", excerpt="")
+                if item_id:
+                    self._row_errors[item_id] = err
+                if filename in self._results:
+                    self._results.pop(filename, None)
+                self.status.config(text=f"Blad: {filename}")
             elif kind == "progress":
                 done, total = msg[1], msg[2]
                 self.status.config(text=f"Postep: {done}/{total}")
@@ -289,7 +300,7 @@ class GuiApp(tk.Tk):
         profanity: str | None = None,
         excerpt: str | None = None,
         result: EvaluationResult | None = None,
-    ) -> None:
+    ) -> str | None:
         tag = None
         if score:
             try:
@@ -320,7 +331,7 @@ class GuiApp(tk.Tk):
                     self.tree.item(item, values=new_values)
                 if result:
                     self._row_map[item] = result
-                return
+                return item
 
         if tag:
             item_id = self.tree.insert(
@@ -337,6 +348,7 @@ class GuiApp(tk.Tk):
             )
         if result:
             self._row_map[item_id] = result
+        return item_id
 
     def _update_summary(self) -> None:
         if not self._results:
