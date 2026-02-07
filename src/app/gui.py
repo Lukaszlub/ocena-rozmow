@@ -10,7 +10,7 @@ from typing import Dict, List
 import tkinter as tk
 from tkinter import filedialog, ttk, messagebox
 
-from src.core.config import AppConfig
+from src.core.config import AppConfig, save_criteria
 from src.core.models import EvaluationResult
 from src.pipelines.batch import process_file
 from src.services.db import init_db, list_evaluations, count_evaluations
@@ -55,6 +55,9 @@ class GuiApp(tk.Tk):
 
         self.btn_open_reports = ttk.Button(top, text="Otworz folder raportow", command=self._open_reports)
         self.btn_open_reports.pack(side=tk.LEFT, padx=8)
+
+        self.btn_criteria = ttk.Button(top, text="Kryteria oceny", command=self._open_criteria_popup)
+        self.btn_criteria.pack(side=tk.LEFT, padx=8)
 
         self.status = ttk.Label(top, text="Gotowe")
         self.status.pack(side=tk.LEFT, padx=12)
@@ -344,6 +347,69 @@ class GuiApp(tk.Tk):
         self.summary.insert(tk.END, f"Liczba ocen: {len(self._results)}\n")
         self.summary.insert(tk.END, f"Sredni wynik: {avg * 100:.2f}%\n")
         self.summary.insert(tk.END, f"Wulgaryzmy: {prof}\n")
+
+    def _open_criteria_popup(self) -> None:
+        win = tk.Toplevel(self)
+        win.title("Kryteria oceny")
+        win.geometry("520x360")
+
+        cols = ("name", "weight", "desc")
+        tree = ttk.Treeview(win, columns=cols, show="headings", height=8)
+        tree.heading("name", text="Nazwa")
+        tree.heading("weight", text="Waga")
+        tree.heading("desc", text="Opis")
+        tree.column("name", width=120)
+        tree.column("weight", width=60, anchor=tk.CENTER)
+        tree.column("desc", width=300)
+        tree.pack(fill=tk.BOTH, expand=True, padx=10, pady=8)
+
+        for c in self.cfg.criteria:
+            tree.insert("", tk.END, values=(c.get("name", ""), c.get("weight", 0), c.get("description", "")))
+
+        form = ttk.Frame(win)
+        form.pack(fill=tk.X, padx=10, pady=6)
+        ttk.Label(form, text="Nazwa").grid(row=0, column=0, sticky=tk.W)
+        ttk.Label(form, text="Waga").grid(row=0, column=1, sticky=tk.W)
+        ttk.Label(form, text="Opis").grid(row=0, column=2, sticky=tk.W)
+
+        name_var = tk.StringVar()
+        weight_var = tk.StringVar()
+        desc_var = tk.StringVar()
+
+        ttk.Entry(form, textvariable=name_var, width=18).grid(row=1, column=0, padx=4)
+        ttk.Entry(form, textvariable=weight_var, width=8).grid(row=1, column=1, padx=4)
+        ttk.Entry(form, textvariable=desc_var, width=40).grid(row=1, column=2, padx=4)
+
+        def add_row() -> None:
+            name = name_var.get().strip()
+            if not name:
+                messagebox.showinfo("Kryteria", "Podaj nazwe kryterium.")
+                return
+            try:
+                weight = float(weight_var.get().strip())
+            except ValueError:
+                messagebox.showinfo("Kryteria", "Waga musi byc liczba.")
+                return
+            desc = desc_var.get().strip()
+            tree.insert("", tk.END, values=(name, weight, desc))
+            name_var.set("")
+            weight_var.set("")
+            desc_var.set("")
+
+        def save_all() -> None:
+            criteria = []
+            for item in tree.get_children():
+                v = tree.item(item, "values")
+                criteria.append({"name": v[0], "weight": float(v[1]), "description": v[2]})
+            self.cfg.criteria = criteria
+            self.cfg.weights = {c["name"]: float(c["weight"]) for c in criteria}
+            save_criteria(Path("config.yaml"), criteria)
+            messagebox.showinfo("Kryteria", "Zapisano zmiany w config.yaml.")
+
+        btns = ttk.Frame(win)
+        btns.pack(fill=tk.X, padx=10, pady=6)
+        ttk.Button(btns, text="Dodaj", command=add_row).pack(side=tk.LEFT)
+        ttk.Button(btns, text="Zapisz", command=save_all).pack(side=tk.LEFT, padx=6)
 
     def _apply_filter(self) -> None:
         self._name_filter = self.filter_var.get().strip()

@@ -1,7 +1,7 @@
 ﻿from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from pathlib import Path
 from typing import Dict, List, Any
 import yaml
@@ -69,3 +69,11 @@ def _weights_from_criteria(raw: Dict[str, Any]) -> Dict[str, float]:
     if "criteria" in raw and raw["criteria"]:
         return {c["name"]: float(c["weight"]) for c in raw["criteria"]}
     return raw.get("weights", {})
+
+
+def save_criteria(path: Path, criteria: List[Dict[str, Any]]) -> None:
+    raw = yaml.safe_load(path.read_text(encoding="utf-8"))
+    raw["criteria"] = criteria
+    if "weights" in raw:
+        raw.pop("weights", None)
+    path.write_text(yaml.safe_dump(raw, sort_keys=False, allow_unicode=True), encoding="utf-8")
