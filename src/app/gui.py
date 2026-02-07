@@ -149,6 +149,7 @@ class GuiApp(tk.Tk):
         self.status.config(text=f"Wybrano {len(paths)} plikow. Kliknij Start oceny.")
 
     def _process_files(self, paths: List[str]) -> None:
+        local_db = init_db(self.cfg.db_path)
         self.cfg.input_dir.mkdir(parents=True, exist_ok=True)
         processed = 0
 
@@ -158,7 +159,7 @@ class GuiApp(tk.Tk):
             try:
                 shutil.copy2(src, dst)
                 self._queue.put(("status", src.name, "W trakcie", None))
-                result = process_file(dst, self.cfg, self.db_conn)
+                result = process_file(dst, self.cfg, local_db)
                 if result is None:
                     self._queue.put(("status", src.name, "Pominieto", None))
                 else:
@@ -169,6 +170,10 @@ class GuiApp(tk.Tk):
             processed += 1
             self._queue.put(("progress", processed, len(paths)))
 
+        try:
+            local_db.close()
+        except Exception:
+            pass
         self._queue.put(("done", None, None))
 
     def _start_processing(self) -> None:
