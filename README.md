@@ -58,6 +58,23 @@ Zmien w `config.yaml`:
 - Scoring korzysta z Responses API i Structured Outputs (JSON schema).
 - Dla lokalnego LLM (LM Studio) ustaw `scoring.provider: lmstudio` i `scoring.base_url`.
 
+## LM Studio (lokalny LLM)
+
+1. Uruchom LM Studio i zaladuj model (np. `bielik-1.5b-v3.0-instruct`).
+2. Wlacz serwer API (OpenAI-compatible).
+3. Sprawdz liste modeli:
+```powershell
+curl http://172.18.192.1:1234/v1/models
+```
+4. Ustaw w `config.yaml`:
+```yaml
+scoring:
+  provider: lmstudio
+  base_url: http://172.18.192.1:1234/v1
+  model: bielik-1.5b-v3.0-instruct
+```
+5. Uruchom GUI lub batch jak zwykle.
+
 ## GUI (Tkinter)
 Uruchom:
 ```powershell
