@@ -266,6 +266,10 @@ class GuiApp(tk.Tk):
                 self.details.insert(tk.END, f"- {k}: {v:.2f} | Dowod: {ev}\n")
             else:
                 self.details.insert(tk.END, f"- {k}: {v:.2f}\n")
+        if r.knowledge_snippets:
+            self.details.insert(tk.END, "\nFragmenty bazy wiedzy:\n")
+            for snip in r.knowledge_snippets:
+                self.details.insert(tk.END, f"- {snip}\n")
         self.details.insert(tk.END, "\nTranskrypcja:\n")
         self.details.insert(tk.END, r.transcript)
 
@@ -514,6 +518,7 @@ class GuiApp(tk.Tk):
                 dst = path / Path(f).name
                 shutil.copy2(f, dst)
             refresh_list()
+            reindex()
 
         def reindex() -> None:
             try:
@@ -522,9 +527,22 @@ class GuiApp(tk.Tk):
             except Exception as exc:
                 messagebox.showerror("Baza wiedzy", str(exc))
 
+        def remove_selected() -> None:
+            sel = listbox.curselection()
+            if not sel:
+                return
+            name = listbox.get(sel[0])
+            try:
+                (path / name).unlink(missing_ok=True)
+                refresh_list()
+                reindex()
+            except Exception as exc:
+                messagebox.showerror("Baza wiedzy", str(exc))
+
         btns = ttk.Frame(win)
         btns.pack(fill=tk.X, padx=10, pady=6)
         ttk.Button(btns, text="Dodaj PDF", command=add_pdf).pack(side=tk.LEFT)
+        ttk.Button(btns, text="Usun zaznaczony", command=remove_selected).pack(side=tk.LEFT, padx=6)
         ttk.Button(btns, text="Odswiez liste", command=refresh_list).pack(side=tk.LEFT, padx=6)
         ttk.Button(btns, text="Zbuduj indeks", command=reindex).pack(side=tk.LEFT, padx=6)
 

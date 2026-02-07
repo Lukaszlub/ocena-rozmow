@@ -28,6 +28,7 @@ class EvaluationResult:
     score_breakdown: Dict[str, float]
     evidence_breakdown: Dict[str, str]
     evidence_summary: str
+    knowledge_snippets: List[str]
     transcription_confidence: float
     call_duration_sec: int
     file_hash: str

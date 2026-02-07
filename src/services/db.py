@@ -31,6 +31,7 @@ def init_db(db_path: Path) -> sqlite3.Connection:
             score_breakdown TEXT,
             evidence_breakdown TEXT,
             evidence_summary TEXT,
+            knowledge_snippets TEXT,
             transcription_confidence REAL
         );
         """
@@ -38,6 +39,7 @@ def init_db(db_path: Path) -> sqlite3.Connection:
     _ensure_column(conn, "call_evaluations", "profanity_excerpt", "TEXT")
     _ensure_column(conn, "call_evaluations", "evidence_breakdown", "TEXT")
     _ensure_column(conn, "call_evaluations", "evidence_summary", "TEXT")
+    _ensure_column(conn, "call_evaluations", "knowledge_snippets", "TEXT")
     conn.commit()
     return conn
 
@@ -60,8 +62,8 @@ def insert_evaluation(conn: sqlite3.Connection, r: EvaluationResult) -> None:
             first_name, last_name, file_name, file_hash, call_duration,
             evaluation_timestamp, transcript, score_total, stars,
             profanity_flag, profanity_phrases, profanity_excerpt, score_breakdown,
-            evidence_breakdown, evidence_summary, transcription_confidence
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            evidence_breakdown, evidence_summary, knowledge_snippets, transcription_confidence
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             r.first_name,
@@ -79,6 +81,7 @@ def insert_evaluation(conn: sqlite3.Connection, r: EvaluationResult) -> None:
             json.dumps(r.score_breakdown, ensure_ascii=False),
             json.dumps(r.evidence_breakdown, ensure_ascii=False),
             r.evidence_summary,
+            json.dumps(r.knowledge_snippets, ensure_ascii=False),
             r.transcription_confidence,
         ),
     )
@@ -100,7 +103,7 @@ def list_evaluations(
             first_name, last_name, file_name, file_hash, call_duration,
             evaluation_timestamp, transcript, score_total, stars,
             profanity_flag, profanity_phrases, profanity_excerpt, score_breakdown,
-            evidence_breakdown, evidence_summary, transcription_confidence
+            evidence_breakdown, evidence_summary, knowledge_snippets, transcription_confidence
         FROM call_evaluations
         {where}
         ORDER BY id DESC
@@ -127,7 +130,8 @@ def list_evaluations(
                 score_breakdown=json.loads(r[12] or "{}"),
                 evidence_breakdown=json.loads(r[13] or "{}"),
                 evidence_summary=r[14] or "",
-                transcription_confidence=float(r[15] or 0.0),
+                knowledge_snippets=json.loads(r[15] or "[]"),
+                transcription_confidence=float(r[16] or 0.0),
             )
         )
     return rows

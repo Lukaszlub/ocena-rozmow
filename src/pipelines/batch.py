@@ -61,6 +61,7 @@ def process_file(path: Path, cfg: AppConfig, db_conn) -> EvaluationResult | None
         score_breakdown=scores,
         evidence_breakdown=evidence,
         evidence_summary=evidence_summary,
+        knowledge_snippets=knowledge_ctx,
         transcription_confidence=transcription.confidence,
         call_duration_sec=transcription.duration_sec,
         file_hash=file_hash,

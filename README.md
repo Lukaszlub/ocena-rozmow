@@ -90,6 +90,19 @@ knowledge:
 ```
 3. System automatycznie zindeksuje PDF i bedzie dolaczal fragmenty do promptu oceny.
 
+## Technologie i narzedzia
+- Python 3.12+
+- Tkinter (GUI)
+- SQLite (baza danych)
+- faster-whisper (lokalna transkrypcja)
+- OpenAI SDK (scoring / opcjonalna transkrypcja)
+- LM Studio (lokalny LLM przez OpenAI-compatible API)
+- PyPDF (odczyt PDF do bazy wiedzy)
+- FTS5 (SQLite full-text search dla RAG)
+- openpyxl (eksport do Excel)
+- watchdog (monitoring folderu)
+- PyInstaller + Inno Setup (instalator Windows)
+
 ## LM Studio (lokalny LLM)
 
 1. Uruchom LM Studio i zaladuj model (np. `bielik-1.5b-v3.0-instruct`).
