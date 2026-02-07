@@ -24,6 +24,7 @@ def export_to_excel(rows: List[EvaluationResult], out_path: Path) -> None:
         "Gwiazdki",
         "Slowo obrazliwe",
         "Cytat wulgaryzmu",
+        "Cytat dowodowy",
         "Transkrypcja",
     ]
     ws.append(headers)
@@ -43,6 +44,7 @@ def export_to_excel(rows: List[EvaluationResult], out_path: Path) -> None:
                 r.stars,
                 profanity_text,
                 r.profanity_excerpt,
+                r.evidence_summary,
                 r.transcript,
             ]
         )

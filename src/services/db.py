@@ -29,11 +29,15 @@ def init_db(db_path: Path) -> sqlite3.Connection:
             profanity_phrases TEXT,
             profanity_excerpt TEXT,
             score_breakdown TEXT,
+            evidence_breakdown TEXT,
+            evidence_summary TEXT,
             transcription_confidence REAL
         );
         """
     )
     _ensure_column(conn, "call_evaluations", "profanity_excerpt", "TEXT")
+    _ensure_column(conn, "call_evaluations", "evidence_breakdown", "TEXT")
+    _ensure_column(conn, "call_evaluations", "evidence_summary", "TEXT")
     conn.commit()
     return conn
 
@@ -55,8 +59,9 @@ def insert_evaluation(conn: sqlite3.Connection, r: EvaluationResult) -> None:
         INSERT INTO call_evaluations (
             first_name, last_name, file_name, file_hash, call_duration,
             evaluation_timestamp, transcript, score_total, stars,
-            profanity_flag, profanity_phrases, profanity_excerpt, score_breakdown, transcription_confidence
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            profanity_flag, profanity_phrases, profanity_excerpt, score_breakdown,
+            evidence_breakdown, evidence_summary, transcription_confidence
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             r.first_name,
@@ -72,6 +77,8 @@ def insert_evaluation(conn: sqlite3.Connection, r: EvaluationResult) -> None:
             ", ".join(r.profanity_phrases),
             r.profanity_excerpt,
             json.dumps(r.score_breakdown, ensure_ascii=False),
+            json.dumps(r.evidence_breakdown, ensure_ascii=False),
+            r.evidence_summary,
             r.transcription_confidence,
         ),
     )
@@ -92,7 +99,8 @@ def list_evaluations(
         SELECT
             first_name, last_name, file_name, file_hash, call_duration,
             evaluation_timestamp, transcript, score_total, stars,
-            profanity_flag, profanity_phrases, profanity_excerpt, score_breakdown, transcription_confidence
+            profanity_flag, profanity_phrases, profanity_excerpt, score_breakdown,
+            evidence_breakdown, evidence_summary, transcription_confidence
         FROM call_evaluations
         {where}
         ORDER BY id DESC
@@ -117,7 +125,9 @@ def list_evaluations(
                 profanity_phrases=(r[10].split(", ") if r[10] else []),
                 profanity_excerpt=r[11] or "",
                 score_breakdown=json.loads(r[12] or "{}"),
-                transcription_confidence=float(r[13] or 0.0),
+                evidence_breakdown=json.loads(r[13] or "{}"),
+                evidence_summary=r[14] or "",
+                transcription_confidence=float(r[15] or 0.0),
             )
         )
     return rows

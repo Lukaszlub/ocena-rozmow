@@ -191,7 +191,11 @@ class GuiApp(tk.Tk):
         self.details.delete("1.0", tk.END)
         self.details.insert(tk.END, "Oceny kategorii:\n")
         for k, v in r.score_breakdown.items():
-            self.details.insert(tk.END, f"- {k}: {v:.2f}\n")
+            ev = r.evidence_breakdown.get(k, "") if r.evidence_breakdown else ""
+            if ev:
+                self.details.insert(tk.END, f"- {k}: {v:.2f} | Dowod: {ev}\n")
+            else:
+                self.details.insert(tk.END, f"- {k}: {v:.2f}\n")
         self.details.insert(tk.END, "\nTranskrypcja:\n")
         self.details.insert(tk.END, r.transcript)
 
@@ -229,7 +233,7 @@ class GuiApp(tk.Tk):
                 score=f"{r.score_total * 100:.2f}",
                 stars=str(r.stars),
                 profanity="TAK" if r.profanity_flag else "NIE",
-                excerpt=r.profanity_excerpt,
+                excerpt=r.evidence_summary,
                 result=r,
             )
         self._update_summary()
@@ -254,7 +258,7 @@ class GuiApp(tk.Tk):
                     score=f"{result.score_total * 100:.2f}",
                     stars=str(result.stars),
                     profanity="TAK" if result.profanity_flag else "NIE",
-                    excerpt=result.profanity_excerpt,
+                    excerpt=result.evidence_summary,
                     result=result,
                 )
                 self._update_summary()

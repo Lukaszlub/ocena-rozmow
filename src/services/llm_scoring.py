@@ -14,7 +14,12 @@ Jestes audytorem rozmow telefonicznych. Ocen rozmowe na podstawie transkrypcji.
 Dla kazdej kategorii podaj ocene w skali 0.0-1.0.
 Kategorie: Otwarcie, Merytoryka, Proces, Jezyk, Domkniecie, Technika.
 Wynik ma byc obiektywny i ostrozny. Jesli brak dowodu w transkrypcji, ocen nisko.
-Zwroc tylko JSON zgodny ze schematem.
+Zwroc JSON:
+{
+  "scores": { "Kryterium": 0.0-1.0, ... },
+  "evidence": { "Kryterium": "krotki cytat z transkrypcji" }
+}
+Jesli brak dowodu, evidence ustaw na pusty string.
 """.strip()
 
 
@@ -64,19 +69,32 @@ def _extract_json(text: str) -> Optional[str]:
     return None
 
 
-def _normalize_scores(payload: Dict, weights: Dict[str, float]) -> Dict[str, float]:
+def _normalize_scores(payload: Dict, criteria: list[dict]) -> Dict[str, float]:
+    names = [c["name"] for c in criteria]
     if "scores" in payload and isinstance(payload["scores"], dict):
         scores = payload["scores"]
     else:
-        scores = {k: payload.get(k, 0.0) for k in weights.keys() if k in payload}
+        scores = {k: payload.get(k, 0.0) for k in names if k in payload}
         if not scores:
             raise KeyError("scores")
-    for k in weights.keys():
+    for k in names:
         scores.setdefault(k, 0.0)
     return scores
 
 
-def score_transcript(transcript: str, cfg_scoring: Dict[str, str], weights: Dict[str, float]) -> Dict[str, float]:
+def _normalize_evidence(payload: Dict, criteria: list[dict]) -> Dict[str, str]:
+    names = [c["name"] for c in criteria]
+    ev = payload.get("evidence", {}) if isinstance(payload.get("evidence", {}), dict) else {}
+    if not ev:
+        ev = {k: "" for k in names}
+    for k in names:
+        ev.setdefault(k, "")
+    return ev
+
+
+def score_transcript(
+    transcript: str, cfg_scoring: Dict[str, str], criteria: list[dict], knowledge_ctx: list[str]
+) -> tuple[Dict[str, float], Dict[str, str]]:
     client = _client_for_provider(cfg_scoring)
     provider = (cfg_scoring.get("provider") or "openai").lower()
 
@@ -90,11 +108,20 @@ def score_transcript(transcript: str, cfg_scoring: Dict[str, str], weights: Dict
 
     for attempt in range(max_retries + 1):
         try:
+            criteria_txt = "\n".join(
+                [f"- {c['name']}: {c.get('description','')}".strip() for c in criteria]
+            )
+            knowledge_txt = "\n".join(knowledge_ctx) if knowledge_ctx else ""
+
+            sys_prompt = SYSTEM_PROMPT + "\nKryteria:\n" + criteria_txt
+            if knowledge_txt:
+                sys_prompt += "\n\nBaza wiedzy (uzyj do weryfikacji prawdy):\n" + knowledge_txt
+
             if provider == "lmstudio":
                 response = client.chat.completions.create(
                     model=cfg_scoring["model"],
                     messages=[
-                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {"role": "system", "content": sys_prompt},
                         {"role": "user", "content": transcript},
                     ],
                     temperature=float(cfg_scoring.get("temperature", 0.0)),
@@ -108,7 +135,7 @@ def score_transcript(transcript: str, cfg_scoring: Dict[str, str], weights: Dict
                         {
                             "role": "system",
                             "content": [
-                                {"type": "input_text", "text": SYSTEM_PROMPT},
+                                {"type": "input_text", "text": sys_prompt},
                             ],
                         },
                         {
@@ -139,7 +166,9 @@ def score_transcript(transcript: str, cfg_scoring: Dict[str, str], weights: Dict
                     raise
                 payload = json.loads(recovered)
 
-            return _normalize_scores(payload, weights)
+            scores = _normalize_scores(payload, criteria)
+            evidence = _normalize_evidence(payload, criteria)
+            return scores, evidence
         except Exception as exc:
             last_error = exc
             if attempt < max_retries:

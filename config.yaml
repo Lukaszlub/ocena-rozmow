@@ -6,13 +6,25 @@ reports_dir: reports
 db_path: data/evaluations.sqlite3
 use_excel_export: true
 
-weights:
-  Otwarcie: 0.10
-  Merytoryka: 0.30
-  Proces: 0.20
-  Jezyk: 0.15
-  Domkniecie: 0.10
-  Technika: 0.15
+criteria:
+  - name: Otwarcie
+    weight: 0.10
+    description: "Powitanie zgodne ze standardem"
+  - name: Merytoryka
+    weight: 0.30
+    description: "Poprawnosc informacji"
+  - name: Proces
+    weight: 0.20
+    description: "Badanie potrzeb i prowadzenie procesu"
+  - name: Jezyk
+    weight: 0.15
+    description: "Prostota i kultura wypowiedzi"
+  - name: Domkniecie
+    weight: 0.10
+    description: "Podsumowanie i domkniecie rozmowy"
+  - name: Technika
+    weight: 0.15
+    description: "Sprawnosc obslugi"
 
 profanity_list:
   - idiota
@@ -54,3 +66,10 @@ logging:
   file_path: logs/app.log
   max_bytes: 1048576
   backup_count: 5
+
+knowledge:
+  enabled: true
+  folder: data/knowledge
+  chunk_chars: 1000
+  overlap_chars: 150
+  top_k: 3

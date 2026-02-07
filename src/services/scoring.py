@@ -14,4 +14,6 @@ def score_to_stars(score_total: float, thresholds: Dict[str, float]) -> int:
 
 
 def compute_score(weights: Dict[str, float], scores: Dict[str, float]) -> float:
+    if not weights:
+        return 0.0
     return sum(weights[k] * scores.get(k, 0.0) for k in weights.keys())

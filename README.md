@@ -75,6 +75,21 @@ pip install faster-whisper
 ```
 3. Uruchom batch lub GUI jak zwykle.
 
+## Baza wiedzy (PDF) i RAG lokalny
+
+1. Umiesc pliki PDF w folderze:
+```
+data/knowledge
+```
+2. W `config.yaml` ustaw:
+```yaml
+knowledge:
+  enabled: true
+  folder: data/knowledge
+  top_k: 3
+```
+3. System automatycznie zindeksuje PDF i bedzie dolaczal fragmenty do promptu oceny.
+
 ## LM Studio (lokalny LLM)
 
 1. Uruchom LM Studio i zaladuj model (np. `bielik-1.5b-v3.0-instruct`).
