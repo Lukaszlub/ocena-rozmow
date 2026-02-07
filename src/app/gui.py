@@ -14,6 +14,7 @@ from src.core.config import AppConfig, save_criteria
 from src.core.models import EvaluationResult
 from src.pipelines.batch import process_file
 from src.services.db import init_db, list_evaluations, count_evaluations
+from src.services.knowledge import ensure_knowledge_index
 from src.services.export_excel import default_report_path, export_to_excel
 
 
@@ -101,6 +102,9 @@ class GuiApp(tk.Tk):
 
         self.btn_criteria = ttk.Button(actions, text="Kryteria oceny", command=self._open_criteria_popup)
         self.btn_criteria.pack(side=tk.LEFT, padx=8)
+
+        self.btn_knowledge = ttk.Button(actions, text="Baza wiedzy", command=self._open_knowledge_popup)
+        self.btn_knowledge.pack(side=tk.LEFT, padx=8)
 
         self.status = ttk.Label(actions, text="Gotowe", style="Sub.TLabel")
         self.status.pack(side=tk.RIGHT)
@@ -479,6 +483,52 @@ class GuiApp(tk.Tk):
         btns.pack(fill=tk.X, padx=10, pady=6)
         ttk.Button(btns, text="Dodaj", command=add_row).pack(side=tk.LEFT)
         ttk.Button(btns, text="Zapisz", command=save_all).pack(side=tk.LEFT, padx=6)
+
+    def _open_knowledge_popup(self) -> None:
+        win = tk.Toplevel(self)
+        win.title("Baza wiedzy (PDF)")
+        win.geometry("520x360")
+
+        folder = self.cfg.knowledge.get("folder", "data/knowledge")
+        path = Path(folder)
+        path.mkdir(parents=True, exist_ok=True)
+
+        ttk.Label(win, text=f"Folder: {path}").pack(anchor=tk.W, padx=10, pady=(8, 4))
+
+        listbox = tk.Listbox(win, height=10)
+        listbox.pack(fill=tk.BOTH, expand=True, padx=10, pady=6)
+
+        def refresh_list() -> None:
+            listbox.delete(0, tk.END)
+            for pdf in sorted(path.glob("*.pdf")):
+                listbox.insert(tk.END, pdf.name)
+
+        def add_pdf() -> None:
+            files = filedialog.askopenfilenames(
+                title="Dodaj PDF do bazy wiedzy",
+                filetypes=[("PDF", "*.pdf")],
+            )
+            if not files:
+                return
+            for f in files:
+                dst = path / Path(f).name
+                shutil.copy2(f, dst)
+            refresh_list()
+
+        def reindex() -> None:
+            try:
+                ensure_knowledge_index(self.db_conn, self.cfg.knowledge)
+                messagebox.showinfo("Baza wiedzy", "Indeks zaktualizowany.")
+            except Exception as exc:
+                messagebox.showerror("Baza wiedzy", str(exc))
+
+        btns = ttk.Frame(win)
+        btns.pack(fill=tk.X, padx=10, pady=6)
+        ttk.Button(btns, text="Dodaj PDF", command=add_pdf).pack(side=tk.LEFT)
+        ttk.Button(btns, text="Odswiez liste", command=refresh_list).pack(side=tk.LEFT, padx=6)
+        ttk.Button(btns, text="Zbuduj indeks", command=reindex).pack(side=tk.LEFT, padx=6)
+
+        refresh_list()
 
     def _apply_filter(self) -> None:
         self._name_filter = self.filter_var.get().strip()
