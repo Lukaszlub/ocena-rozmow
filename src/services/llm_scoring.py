@@ -99,7 +99,6 @@ def score_transcript(transcript: str, cfg_scoring: Dict[str, str], weights: Dict
                     ],
                     temperature=float(cfg_scoring.get("temperature", 0.0)),
                     max_tokens=int(cfg_scoring.get("max_output_tokens", 400)),
-                    response_format={"type": "json_object"},
                 )
                 raw = response.choices[0].message.content or ""
             else:
